@@ -72,6 +72,6 @@ nest_data = 'auto_away,owner={username} value={auto_away} {now}\ncurrent_humidit
 print(nest_data)
 print(config.get('influxdb','host'))
 print(config.get('influxdb','database'))
-influxdb = requests.post('http://{influxdb_host}:8086/write?db={database}'.format(influxdb_host = config.get('influxdb','host'), database=config.get('influxdb','database')), data=nest_data)
+influxdb = requests.post('http://{influxdb_host}:8086/write?db={database}&precision=s'.format(influxdb_host = config.get('influxdb','host'), database=config.get('influxdb','database')), data=nest_data)
 print(influxdb.status_code)
 print(influxdb.text)
