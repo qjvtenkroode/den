@@ -1,17 +1,26 @@
 from ConfigParser import SafeConfigParser
 import json
 import time
+import argparse
 
 import requests
 
+# Create a parser to grab the config
+parser = argparse.ArgumentParser(description='Den')
+parser.add_argument('--conf', '-c',
+        action='store',
+        required=True,
+        help='config file')
+
+args = parser.parse_args()
+
 # read config file for credentials
 config = SafeConfigParser()
-config.read('../config/credentials.conf')
+if args.conf:
+    config.read(args.conf)
 
 ## login at home.nest.com and get transport_url, access_token and userid
-#headers = {'user-agent': 'Nest/1.1.0.10 CFNetwork/548.0.4'}
 data = {'username': config.get('account','username'), 'password': config.get('account','password')}
-#login_result = requests.post('https://home.nest.com/user/login', headers=headers, data=data)
 login_result = requests.post('https://home.nest.com/user/login',  data=data)
 
 ## parse the results
@@ -69,9 +78,6 @@ current_outside_temperature = weather_json[city]['current']['temp_c']
 
 ## write data to InfluxDB
 nest_data = 'auto_away,owner={username} value={auto_away} {now}\ncurrent_humidity,owner={username} value={current_humidity} {now}\ncurrent_temperature,owner={username} value={current_temperature} {now}\ntarget_temperature,owner={username} value={target_temperature} {now}\nhvac_heater_state,owner={username} value={hvac_heater_state} {now}\ncurrent_outside_humidity,owner={username} value={current_outside_humidity} {now}\ncurrent_outside_temperature,owner={username} value={current_outside_temperature} {now}'.format(now = time.strftime('%s'), username = config.get('account','username'), auto_away = auto_away, current_humidity = current_humidity, current_temperature = current_temperature, target_temperature = target_temperature, hvac_heater_state = hvac_heater_state, current_outside_humidity = current_outside_humidity, current_outside_temperature = current_outside_temperature)
-print(nest_data)
-print(config.get('influxdb','host'))
-print(config.get('influxdb','database'))
+
+# ship data to Influx
 influxdb = requests.post('http://{influxdb_host}:8086/write?db={database}&precision=s'.format(influxdb_host = config.get('influxdb','host'), database=config.get('influxdb','database')), data=nest_data)
-print(influxdb.status_code)
-print(influxdb.text)
